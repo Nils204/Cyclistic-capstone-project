@@ -1,0 +1,399 @@
+---
+title: "Cyclistic markdown document"
+author: "Nils Nijman"
+date: "28-2-2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Table of content**
+* 1.Purpose of this document  
+* 2.Ask
+* 3.Prepare
+* 4.Process
+* 5.Analyse
+* 6.Share
+* 7.Act
+
+# **1.Purpose of this document**
+This document contains the Rstudio section of the steps undertaken to conduct my analysis of the Cyclistic capstone project of the Google Data Analytics professional course on [Coursera](https://www.coursera.org/professional-certificates/google-data-analytics). In short: the Google Data Analytics program provides a structured 5 months program for entry level data analyst positions.  
+
+I've divided the capstone project into 2 sections: Section 1: the Ask, Prepare, Process and Analyze sections are conducted below. The Share section (the visualization of the data) is done via [Tableau](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes). The end result of the project is uploaded to Kaggle INSERT LINK HERE or Github INSERT LINK here. 
+Note: If the reader of this document is only interested in the end product of this analysis please refer to the link above. This Rmarkdown document will show the complete record of my work with Rstudio (including mistakes I made and how I fixed those mistakes). 
+
+## **Scenario:**
+"I am working as a junior data analyst in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, my team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, the team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve my recommendations, so they must be backed up with compelling data insights and professional data visualizations."  
+
+## **Deliverables:**
+* 1.A clear statement of the business task
+* 2.A description of all data sources used
+* 3.Documentation of any cleaning or manipulation of data
+* 4.A summary of your analysis
+* 5.Supporting visualizations and key findings
+* 6.Top three recommendations  
+
+# **2.Ask**  
+**Identify the business task**  
+The future success of the company depends on the conversion of casual riders to annual memberships. 
+The purpose of this analysis is therefore to discover the key differences in the using of rental bikes by 2 different users of the bikes: annual members and casual riders.  
+
+**Statement of the bussiness task:**  
+How do annual members and casual riders use rental bikes differently?  
+
+**Key stakeholders:**  
+Cyclistic executive team, Director of Marketing (Lily Moreno), Marketing Analytics team.  
+
+# **3.Prepare**  
+
+**Gathering the datasets**  
+The dataset consists of 12 months of inhouse data organised in 12 seperate CSV files. Made available via this [link](https://divvy-tripdata.s3.amazonaws.com/index.html)  
+
+**Decription of the datasets:**  
+Every csv file is organized in the same long data format consisting of the same 15 variables and over 20.000 observations.  
+Column names:  ride ID, ride type, start/end time, ride length (in minutes), day of the week, starting point (code, name, and latitude/longitude), ending point (code, name, and latitude/longitude), and member/casual rider. 
+
+**Preparing the datasets**
+After downloading all the files to my laptop I've opened them up in excel and adjusted the column names so they were exactly the same, (same spelling, all lower case and no spatials etc.). Also added a ride_length column to the excel files as this seems useful in further analysis. 
+Note: The datasets are  too large to perform any meaningful work in Excel.  
+
+**Verifying the credibility of the data:**  
+* Reliable: the data is structured and organized in the same order  
+* Original: provided for by the Cyclistic company using it's own inhouse data  
+* Comprehensive: Full year worth of data detailing over 3 millions obeservations of 15 variables  
+* Current: april 2019 to march 2020)  
+* Cited: provided for by the Cyclistic company using it's own inhouse data  
+
+### **To proceed with the next steps of this analysis the excel files are uploaded to R:**
+**setting up my environment**
+```{r Uploading libraries and files, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+#setting up the directory
+setwd("C:/Users/nils_/Documents/Bike share case study/Processing_data/Version_1_ride_length&week_day")
+#Setting up my environment
+library(tidyverse)
+library(readxl)
+library(here)
+library(janitor)
+library(dplyr)
+library(lubridate)
+
+#importing the datasets
+y2020_04 <- read_excel("2020-04-divvy-tripdata.xlsx")
+y2020_05 <- read_excel("2020-05-divvy-tripdata.xlsx")
+y2020_06 <- read_excel("2020-06-divvy-tripdata.xlsx")
+y2020_07 <- read_excel("2020-07-divvy-tripdata.xlsx")
+y2020_08 <- read_excel("2020-08-divvy-tripdata.xlsx")
+y2020_09 <- read_excel("2020-09-divvy-tripdata.xlsx")
+y2020_10 <- read_excel("2020-10-divvy-tripdata.xlsx")
+y2020_11 <- read_excel("2020-11-divvy-tripdata.xlsx")
+y2020_12 <- read_excel("2020-12-divvy-tripdata.xlsx")
+y2021_01 <- read_excel("2021-01-divvy-tripdata.xlsx")
+y2021_02 <- read_excel("2021-02-divvy-tripdata.xlsx")
+y2021_03 <- read_excel("2021-03-divvy-tripdata.xlsx")
+```
+
+# 4.Process
+**Combining the uploaded csv files in to 1 dataframe using rbind:**
+```{r Rbind, echo=T, results='hide'}
+full_year <- rbind(y2020_04, y2020_05, y2020_06, y2020_07, y2020_08, y2020_09, y2020_10, y2020_11, y2020_12, y2021_01, y2021_02, y2021_03)
+```
+  
+**Summary overview of the full_year dataframe:**
+```{r Summaries}
+colnames(full_year)
+skimr::skim_without_charts(full_year)
+glimpse(full_year)
+head(full_year)
+```
+
+**Looking up how many missing values there are in this dataset (full_year)**
+```{r Looking up na values, echo=TRUE}
+sum(is.na(full_year))
+```
+Note: 541,776 missing values out of a total of 3,489,748 this amounts to 15.5% of the total dataset  
+
+**to further specify in which columns the missing values are concentrated:**
+```{r na values per column, echo=TRUE}
+colSums(is.na(full_year))
+```
+Note: All missing values reside in the ride_length, station names/id and end_lat/lng columns.  
+
+**Dropping the missing values from the dataset**
+```{r dropping na values, echo=T, results='hide'}
+full_year_cleaned <- na.omit(full_year)
+sum(is.na(full_year_cleaned))
+```
+Note: after dropping the missing values 3294375 out of 3489748 remain. meaning that 195373 missing values are removed (5.6%)
+
+**New summaries**
+```{r Summaries updated after na, echo=FALSE}
+skimr::skim_without_charts(full_year_cleaned)
+glimpse(full_year_cleaned)
+```
+
+## **next steps: finding other irregularities within the dataset**
+
+**the station_id columns (start and end both) are in the wrong data type (chr) and need to be converted to numeric to perform analysis**
+```{r datatype conversion, echo=TRUE}
+class(full_year_cleaned$start_station_id) 
+class(full_year_cleaned$end_station_id)
+```
+Note: Some observations include Letters, this is probably why R converted the column into a Character string. These values are useless because there is no way to interpret them. These values need to be omitted from the dataframe  
+
+**Step 1 converting these columns into numeric:**
+```{r mutate function, echo=T, results='hide'}
+full_year_cleaned_V01 <- mutate(full_year_cleaned, start_station_id = as.numeric(start_station_id),
+                   end_station_id = as.numeric(end_station_id))
+```
+
+**Step 2 checking the result:**
+```{r checking result mutate function, echo=TRUE}
+class(full_year_cleaned_V01$start_station_id)
+class(full_year_cleaned_V01$end_station_id)
+```
+
+**Step 3 Checking for added n.a values (there should be some now because of the conversion)**
+```{r checking na values after mutate function, echo=T, results='hide'}
+sum(is.na(full_year_cleaned_V01))
+```
+
+**Step 4 Removing the  n.a values from the dataset and assigning a new df to keep track of the changes**
+```{r na omit after mutate function, echo=T, results='hide'}
+full_year_cleaned_V02 <- na.omit(full_year_cleaned_V01)
+```
+
+**Step 5 Checking the result:**
+```{r checking result after na omit, echo=TRUE}
+sum(is.na(full_year_cleaned_V02))
+colSums(is.na(full_year_cleaned_V02))
+```
+
+## **Other problems that need to be addressed:**  
+
+**The dataset can only be aggregated at the ride-level. This is too granular. Adding some additional columns of data such as day, month, year would improve the analysis and provide additional opportunities to aggregate the data**
+```{r include=FALSE, results='hide'}
+full_year_cleaned_V02$date <- as.Date(full_year_cleaned_V02$started_at)
+```
+
+```{r format as date functions, echo=T, results='hide'}
+full_year_cleaned_V02$month <- format(as.Date(full_year_cleaned_V02$date), "%m")
+full_year_cleaned_V02$month_day <- format(as.Date(full_year_cleaned_V02$date), "%d")
+full_year_cleaned_V02$year <- format(as.Date(full_year_cleaned_V02$date), "%Y")
+full_year_cleaned_V02$day_of_week <- format(as.Date(full_year_cleaned_V02$date), "%A")
+glimpse(full_year_cleaned_V02)
+```
+Note: Because of the settings of my laptop R automatically formats the days of the weeks in Dutch. Have not found a workaround to change this!
+
+**Fiddling around I created 2 extra variables (columns): weekdays and day, these can now be dropped**
+```{r dropping unused columns, echo=T, results='hide'}
+full_year_cleaned_V02$day = NULL
+full_year_cleaned_V02$weekdays = NULL
+```
+
+From the original data set I created an extra column in excel called week_day, this column can also be removed as it replaced by the data added above
+```{r dropping another unused column, echo=T, results='hide'}
+full_year_cleaned_V02$week_day = NULL
+```
+
+**Checking the result**
+```{r glimpse after dropping unused columns, echo=TRUE}
+glimpse(full_year_cleaned_V02)
+```
+
+**saving these results into a new dataframe V03 before proceeding into the next step**
+```{r creating dataframe V03, echo=T, results='hide'}
+full_year_cleaned_V03 <- full_year_cleaned_V02
+```
+
+## **Problems continued:**
+Before uploading the excel files to Rstudio I've created an extra column to calculate ride_length. This ride length_column holds a date PLUS the time, I only want to preserve the time part of the column. Alternative: used the timediff function to calculate the ride_length with Rstudio.  
+**Step 1: dropping the existing ride_length column**
+```{r dropping ride_length column, echo=T, results='hide'}
+full_year_cleaned_V03$ride_length = NULL
+```
+
+**Step 2: adding the new ride_length column**
+```{r adding new ride_length column, echo=T, results='hide'}
+full_year_cleaned_V03$ride_length <- difftime(full_year_cleaned_V03$ended_at,full_year_cleaned_V03$started_at)
+```
+
+**The new structure of the columns**
+```{r inspecting the new structure, echo=TRUE}
+str(full_year_cleaned_V03)
+```
+
+**Step 3: converting "ride_length" from Factor to numeric in order to run calculations on the data**
+```{r converting ride length to numeric, echo=T, results='hide'}
+is.factor(full_year_cleaned_V03$ride_length)
+full_year_cleaned_V03$ride_length <- as.numeric(as.character(full_year_cleaned_V03$ride_length))
+is.numeric(full_year_cleaned_V03$ride_length)
+```
+
+## **Last remaining problems:**
+**The dataframe includes entries when bikes were taken out of docks and checked for quality  or ride_length was negative**
+```{r Adjusting station name and ride length, echo=T, results='hide'}
+full_year_cleaned_V04 <- full_year_cleaned_V03[!(full_year_cleaned_V03$start_station_name == "HQ QR" | full_year_cleaned_V03$ride_length<1),]
+```
+
+**Final steps**
+```{r Final check of dataframe, echo=TRUE, results='hide'}
+sum(is.na(full_year_cleaned_V04))
+str(full_year_cleaned_V04)
+```
+
+# **5.Analysis**  
+## Conducting descriptive analysis  
+
+**Descriptive analysis on ride_length (in minutes)**
+```{r ride length descriptive analysis, echo=TRUE}
+mean(full_year_cleaned_V04$ride_length/60) #straight average (total ride length / rides)
+median(full_year_cleaned_V04$ride_length/60) #midpoint number in the ascending array of ride lengths
+max(full_year_cleaned_V04$ride_length/60) #longest ride
+min(full_year_cleaned_V04$ride_length/60) #shortest ride
+```
+Note: Discovered that the max ride_length is longer than 24 hours! (58720 minutes: >40 days!) This skews the results of the analysis.  
+
+**Setting a limit to the max amount of time that a bike could be used to 24 hours (<86400 seconds)**
+```{r Adjusting ride_length column to exclude ride length greater than 24 hours, echo=TRUE}
+full_year_cleaned_V04 <- full_year_cleaned_V04[!(full_year_cleaned_V04$ride_length>86400),]
+```
+
+**The adjusted descriptive analysis on ride_length (in minutes)**
+```{r Adjusted descriptive analysis of ride length, echo=TRUE}
+mean(full_year_cleaned_V04$ride_length/60) #straight average (total ride length / rides)
+median(full_year_cleaned_V04$ride_length/60) #midpoint number in the ascending array of ride lengths
+max(full_year_cleaned_V04$ride_length/60) #longest ride
+min(full_year_cleaned_V04$ride_length/60) #shortest ride
+```
+
+**Comparing members and casual users**
+```{r members and casual riders, echo=TRUE}
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual, FUN = mean)
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual, FUN = median)
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual, FUN = max)
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual, FUN = min)
+```
+
+
+**The average ride time per day for members vs casual users**
+```{r Average ride length, echo=TRUE}
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual + full_year_cleaned_V04$day_of_week, FUN = mean)
+```
+Note: : The days of the week are out of order. to fix this:
+```{r Reordering weekdays}
+full_year_cleaned_V04$day_of_week <- ordered(full_year_cleaned_V04$day_of_week, levels=c("maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"))
+```
+
+
+
+**The correctly ordered day of the week average ride time per day for members vs casual users**
+```{r Average ride length in the correct order, echo=TRUE}
+aggregate(full_year_cleaned_V04$ride_length/60 ~ full_year_cleaned_V04$member_casual + full_year_cleaned_V04$day_of_week, FUN = mean)
+```
+
+
+**Analysis of the ridership data by type and weekday**
+```{r Correctly displayed weekday descriptive analysis, echo=TRUE}
+full_year_cleaned_V04 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>%  #creates weekday field using wday()
+  group_by(member_casual, weekday) %>%  #groups by usertype and weekday
+  summarise(number_of_rides = n()							#calculates the number of rides and average duration 
+            ,average_duration = mean(ride_length/60)) %>% 		# calculates the average duration
+  arrange(member_casual, weekday)								# sorts
+```
+
+# **6.Share**
+Note: Below follow a few diagrams to check if this cleaned dataset yields results that I can further explore in Tableau
+
+**Number of rides members and casuals**
+```{r number of rides members and casuals, echo=TRUE}
+full_year_cleaned_V04 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length/60)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = "dodge")
+```
+
+**Average duration of trips**
+```{r Average duration of trips, echo=TRUE}
+full_year_cleaned_V04 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length/60)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = "dodge")
+```
+
+**Exporting this dataframe to a CSV file:**
+```{r creating a csv file, eval=FALSE, include=FALSE}
+write.csv(full_year_cleaned_V04, file = "bike_share_completed.csv")
+```
+
+## **Uploading the csv file to Tableau for further analysis:**
+[Link to the slide show on tableau](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes) 
+
+![Alt text](Trips total.png)
+![Alt text](trips_month.png)
+![Alt text](trips_weekday.png)
+![Alt text](trips_hour.png)
+![Alt text](ridelength_total.png)
+![Alt text](ridelength_month.png)
+![Alt text](ridelength_weekday.png)
+
+![Alt text](biketypes_total.png)
+![Alt text](bike_types.png)
+
+
+
+# Act
+
+
+## **Key findings**  
+
+**Bike trips**   
+* Casual riders make up 43% of the total amount of trips taken as opposed to 57% for members.  
+* Both casual and members show the same trend of bike trips throughout the year. Peaking between June and October.  
+* Member bike trips stay up a month longer to November before experiencing the same steep drop off.  
+* Casual riders primarily take trips on the weekends. Members take trips more evenly spread out over the week.  
+* Most bike trips for casual riders start between 12.00 and 18.00. The starting time for members shows a morning peak between 6.00 and 9.00.  
+
+**Ride length**  
+* Casual riders (37 minutes) use their bikes 2.4 times longer than members. (16 minutes)   
+* Casual rider ride length peaks between june and october. Members maintain a more steady ride length throughout the year.   
+* Ride length increases on Friday, Saturday and Sunday for casual riders. For members the average trip length does not vary much per week day.  
+
+**Bike types**  
+* Docked bikes are by far the most used bike type by both members and casual riders.  
+* The classical bike is used significantly less by casual riders than members.  
+
+### Bussiness statement: 
+**How do annual members and casual riders use rental bikes differently?**  
+
+The data shows that casual riders primarily take bike trips during the weekend as opposed to members who take bike trips more evenly spread throughout the week. Casual riders on average also take 2.4 times longer for a single trip, starting their trips later in the day. Both casuals and members take bike trips primarily during the warmer months with a steep decline during the colder months of the year. 
+
+We can therefore conclude that casuals riders on average use the Cyclistic bike services primarily for leisure and not to commute from and to work. 
+At the moment Cyclistic offers a single annual membership which does not benefit casual riders as they primarily take trips on the weekends and during the warmer months. My top 3 recommendations therefore are designed to better fit the needs of casual riders. 
+
+# **Top 3 recommendations**  
+
+* 1. Offer a __weekend-only membership__ at a different price point than the full annual membership to entice casual users towards a full annual membership that is valid from Fridays to Sundays. 
+
+* 2. Offer a __half year only_membership__ from May to October instead of the full year annual membership. 
+
+* 3. Combining the above described recommendations, a third option would be to create a half_year_only membership that is only valid on Friday to Sunday. 
+
+
+ 
+__To the marketing department:__   
+Below I've included a list of the top 20 most used start and end stations, as well as a list with the most popular routes with the average trip length for each station. You can also get full acces to the file here: [Link to the slide show on tableau](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes)
+
+![Alt text](start_stations.png)
+![Alt text](end_stations.png)
+![Alt text](routes.png)
