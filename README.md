@@ -1,13 +1,11 @@
 
 # **Purpose of this document**
-This Github repository contains my analysis of the Cyclistic capstone project of the [Google Data Analytics Professional Course](https://www.coursera.org/professional-certificates/google-data-analytics). In short: the Google Data Analytics Professional program provides a structured 5 months program to be trained as entry level data analysts.  
-
-Please Note: I've used Github to showcase my work, meaning that I haven't used Github's workflow to perform any work or changes.
+This Github repository contains my analysis of the Cyclistic capstone project from the [**Google Data Analytics Professional Course**](https://www.coursera.org/professional-certificates/google-data-analytics).
 
 This capstone project is divided into 2 sections:  
-1.The data preparation/processing/analysis phases are done via Rstudio (using Tivdyverse packages)   
-2.The data visualization is done via [**Tableau**](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes) 
-3.The endresults are presented via a PowerPoint presentation and can be found in the full_report pdf.  
+1. The data preparation/processing/analysis phases are done via Rstudio (using Tivdyverse packages)   
+2. The data visualization is done via [**Tableau**](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes)  
+3. The endresults are presented via a PowerPoint presentation and can be found in the full_report pdf.  
 
 
 Below you can find the structure and layout of my work with Rstudio. For a complete overview including code please refer to the full_report pdf.  
