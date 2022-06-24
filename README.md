@@ -5,7 +5,7 @@ This Github repository contains my analysis of the Cyclistic capstone project fr
 This capstone project is divided into 2 sections:  
 1. The data preparation/processing/analysis phases are done via Rstudio (using Tivdyverse packages)   
 2. The data visualization is done via [**Tableau**](https://public.tableau.com/app/profile/nils.nijman/viz/Cyclistic_completed/Tripstotal?publish=yes)  
-3. The endresults can be found in the full_report pdf and as a slideshow presentation in the repository.  
+The endresults can be found in the full_report pdf and as a slideshow presentation in the repository.  
 
 
 Below you can find the structure and layout of my work with Rstudio.
